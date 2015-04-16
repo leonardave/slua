@@ -227,7 +227,7 @@ namespace SLua
 			}
 
 			index = add(o);
-			LuaDLL.luaS_pushobject(l, index, getAQName(o), gco, udCacheRef);
+			LuaDLL.luaS_pushobject(l, index, getAQName(o), gco?1:0, udCacheRef);
 
 		}
 
