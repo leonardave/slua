@@ -72,6 +72,8 @@ namespace SLua
 				// do nothing
 			}
 
+			LuaValueType.init(luaState.L);
+
 			start(main);
 
 			if (LuaDLL.lua_gettop(luaState.L) != errorReported)
@@ -108,6 +110,7 @@ namespace SLua
 
 		void bindAll(IntPtr l)
 		{
+#if !RELEASE_MARCO // some RELEASE_MARCO used for release version 
 			Assembly[] ams = AppDomain.CurrentDomain.GetAssemblies();
 
 			List<Type> bindlist = new List<Type>();
@@ -136,6 +139,14 @@ namespace SLua
 			{
 				t.GetMethod("Bind").Invoke(null, new object[] { l });
 			}
+#else 
+			// 如果是发布版可以用下面4行替换上面的代码, bind的速度更快, 保证游戏启动速度, 注意bind顺序
+			// If is release version, you can use below 4 lines code avoid reflect search what to bind, make sure game will run full speed on start, keep bind order.
+			BindUnity.Bind(l);
+			// BindUnityUI.Bind(l); // if exists
+			// BindDll.Bind(l); // if exists
+			BindCustom.Bind(l);
+#endif
 		}
 	}
 }
