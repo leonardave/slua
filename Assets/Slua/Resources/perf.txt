@@ -11,12 +11,16 @@ local Time = UnityEngine.Time
 local Matrix4x4 = UnityEngine.Matrix4x4
 local Texture2D = UnityEngine.Texture2D
 local Quaternion = UnityEngine.Quaternion
+local SkinnedMeshRenderer = UnityEngine.SkinnedMeshRenderer
+
+local ffi=require'ffi'
 
 function main()
 	print(jit and "jit on" or "jit off, pls run test with luajit")
 end
 
 local cube = GameObject("Script cube")
+
 
 
 function test1()
@@ -32,16 +36,18 @@ function test2()
 	local transform=cube.transform
 	local start = os.clock()
 	for i=1,200000 do
-		transform:Rotate(Vector3.up, 90)
+		local v=transform.position
 	end
 	print("test2/lua " .. (os.clock() - start));
 end
 
 function test3()
-	local v = cube.transform.position
 	local start = os.clock()
-	for i=1,200000 do
-		v = Vector3(i,i,i)
+	local t={}
+	local m={}
+	for i=1,20000000 do
+		local t=Vector3(1,2,3)
+		t:Normalize()
 	end
 	print("test3/lua " .. (os.clock() - start));
 end
@@ -62,8 +68,8 @@ function test5()
 	local start = os.clock()
 	for i=1,20000 do
 		local v = GameObject()
-		v:AddComponent("SkinnedMeshRenderer")
-		local c=v:GetComponent("SkinnedMeshRenderer")
+		v:AddComponent(SkinnedMeshRenderer)
+		local c=v:GetComponent(SkinnedMeshRenderer)
 		c.castShadows=false
 		c.receiveShadows=false
 	end

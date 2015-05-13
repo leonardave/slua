@@ -106,9 +106,9 @@ struct MethodInfo {};
 
 
 template<class R,class F, class ...A class ...Checker>
-int invoke(lua_State *L,F f,MethodInfo<R,A....>,Checker** ...chk) 
+int invoke(lua_State *L,F f,MethodInfo<R,A....>,Checker&& ...chk) 
 {
-
+	return 0;
 }
 
 template<class R,class ...A>

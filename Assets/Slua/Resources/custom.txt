@@ -1,8 +1,17 @@
 
 MonoBehaviour = UnityEngine.MonoBehaviour
 GameObject = UnityEngine.MonoBehaviour
+local Vector3 = UnityEngine.Vector3
 
-function main()
+function main( ... )
+	local start = os.clock()
+	for i=1,200000 do
+		v = Vector3(i,i,i)
+	end
+	print("test3/lua " .. (os.clock() - start));
+end
+
+function main2()
 
 
 	local s,c=Custom.staticCustom();
