@@ -329,8 +329,6 @@ int Vector3::SmoothDamp(lua_State *L)
 	return 2;
 }
 
-
-
 extern "C" {
 
 	void luaopen_vector3(lua_State *L) {
@@ -338,6 +336,12 @@ extern "C" {
 		class_def<Vector3>(L, "Vector3")
 			.method("__index", value_type_index)
 			.method("__tostring", &Vector3::ToString)
+			.method("__add", &__add<Vector3>)
+			.method("__sub", &__sub<Vector3>)
+			.method("__mul", &__mul<Vector3>)
+			.method("__div", &__div<Vector3>)
+			.method("__eq", &__eq<Vector3>)
+			.method("__unm", &__unm<Vector3>)
 
 			.method("Normalize", &Vector3::Normalize)
 			.method("ToString", &Vector3::ToString)

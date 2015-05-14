@@ -78,6 +78,11 @@ inline int push_value(lua_State *L, const std::string& str) {
 	return 1;
 }
 
+inline int push_value(lua_State *L, const bool& b) {
+	lua_pushboolean(L, b);
+	return 1;
+}
+
 template<class T>
 int push_value(lua_State *L, const T& v) {
 	int count = sizeof(v.data) / sizeof(v.data[0]);
@@ -150,18 +155,20 @@ struct make_result_push<void> {
 
 
 template <class F, class RC, class... Args>
-inline void invoke_function(
+inline int invoke_function(
 	lua_State* L, F const& f, std::false_type, RC 
 	, Args&&... args)
 {
 	push_value(L, f(std::forward<Args>(args)...));
+	return 1;
 }
 
 template <class F, class... Args>
-inline void invoke_function(
+inline int invoke_function(
 	lua_State* L, F const& f, std::false_type, void_result, Args&&... args)
 {
 	f(std::forward<Args>(args)...);
+	return 0;
 }
 
 template <class F, class RC, class This, class... Args>
@@ -223,8 +230,7 @@ template <class R, class ...A, int ...I>
 int invoke_aux(lua_State *L, R(*f)(A...), index_tuple<I...>) {
 
 	int indices[sizeof...(A)+1] = { I... };
-	invoke_function(L, f, std::false_type(), make_result_push<R>::type(), check_type<deduce_type<A>::type>(L, indices[I]+1)...);
-	return 0;
+	return invoke_function(L, f, std::false_type(), make_result_push<R>::type(), check_type<deduce_type<A>::type>(L, indices[I]+1)...);
 }
 
 
@@ -327,6 +333,38 @@ ValueType<T> class_def(lua_State *L,const char* name) {
 
 
 int value_type_index(lua_State *L);
+
+
+template<class T>
+inline bool __eq(const T& a, const T& b) {
+	return a == b;
+}
+
+template<class T>
+inline Vector3 __add(const T& a, const T& b) {
+	return a + b;
+}
+
+template<class T>
+inline Vector3 __sub(const T& a, const T& b) {
+	return a - b;
+}
+
+template<class T>
+inline Vector3 __mul(const T& a, float b) {
+	return a * b;
+}
+
+template<class T>
+inline Vector3 __div(const T& a, float b) {
+	return a / b;
+}
+
+
+template<class T>
+inline Vector3 __unm(const T& a) {
+	return -a;
+}
 
 
 #endif

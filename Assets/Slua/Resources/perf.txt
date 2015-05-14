@@ -46,9 +46,11 @@ function test3()
 	local start = os.clock()
 	local t={}
 	local m={}
-	for i=1,2000000 do
+	for i=1,2 do
 		local t=Vector3(i,i,i)
 		local n=t.normalized
+		
+		print(n,-n,n*2)
 	end
 	print("test3/lua " .. (os.clock() - start));
 end
