@@ -333,37 +333,6 @@ int Vector3::SmoothDamp(lua_State *L)
 
 extern "C" {
 
-	int value_type_index(lua_State *L) {
-		luaL_checktype(L, 1, LUA_TTABLE);
-		luaL_checktype(L, 2, LUA_TSTRING);
-
-		lua_getmetatable(L, 1);
-		
-		
-		lua_pushvalue(L, 2);
-		lua_rawget(L, -2);
-		if (!lua_isnil(L, -1)) {
-			lua_remove(L, -2);
-
-			const char* key = lua_tostring(L, 2);
-			if (islower(key[0])) {
-				lua_pushvalue(L, 1);
-				lua_call(L, 1, 1);
-			}
-			return 1;
-		}
-
-		return 0;
-		
-	}
-
-	struct Foo {
-		Foo(int num) : num_(num) {}
-		void print_add(int i) const { 
-		}
-		int num_;
-	};
-
 	void luaopen_vector3(lua_State *L) {
 
 		class_def<Vector3>(L, "Vector3")
@@ -372,7 +341,6 @@ extern "C" {
 
 			.method("Normalize", &Vector3::Normalize)
 			.method("ToString", &Vector3::ToString)
-			.method("Set", &Vector3::Set)
 
 			.method("magnitude", &Vector3::magnitude)
 			.method("normalized", &Vector3::normalized)
@@ -395,7 +363,7 @@ extern "C" {
 			.func("RotateTowards", &Vector3::RotateTowards)
 			.func("Scale", &Vector3::Scale)
 			.func("Slerp", &Vector3::Slerp)
-			.func("SmoothDamp", &Vector3::SmoothDamp)
+			.func("SmoothDampInner", &Vector3::SmoothDamp)
 			.end();
 	}
 }

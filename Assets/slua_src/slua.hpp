@@ -86,6 +86,8 @@ int push_value(lua_State *L, const T& v) {
 		push_value(L, v.data[n]);
 		lua_rawseti(L, -2, n + 1);
 	}
+	lua_getref(L, T::meta_ref);
+	lua_setmetatable(L, -2);
 	return 1;
 }
 
@@ -269,6 +271,8 @@ struct ValueType {
 			lua_pushstring(L, name);
 			lua_rawget(L, -2);
 			luaL_newmetatable(L, T::meta_name);
+			lua_pushvalue(L, -1);
+			T::meta_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 		}
 		lua_remove(L, 1);
 	}
@@ -320,6 +324,9 @@ ValueType<T> class_def(lua_State *L,const char* name) {
 	ValueType<T> vt(L,name);
 	return vt;
 }
+
+
+int value_type_index(lua_State *L);
 
 
 #endif

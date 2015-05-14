@@ -30,20 +30,49 @@ namespace SLua
 	{
 		static string code = @"
 	local args={...}
+	local Infinity = 1.0 / 0.0
+	local Vector3 = UnityEngine.Vector3
+	local Time = UnityEngine.Time
 
-	local function Class(cls,mt,ctor,fields)
+	local function Class(cls,base,ctor,static,instance)
 		local rawget=rawget
+		local rawset=rawset
 		local cls=cls or {}
         local setmetatable=setmetatable
+
+		for k,v in pairs(instance) do
+			rawset(base,k,v)
+		end
+
+		local fields={}
+
+		local function isField(k)
+			local c=k:sub(1,1)
+			if c>='a' and c<='z' then
+				return true
+			end
+			return false
+		end
+
+		for k,v in pairs(static) do
+			if isField(k) then
+				rawset(fields,k,v)
+			else
+				rawset(cls,k,v)
+			end
+		end
+
 		setmetatable(cls,{
 			__call=function(t,...)
 				local o = ctor(...)
-				setmetatable(o,mt)
+				setmetatable(o,base)
 				return o
 			end,
 			__index=function(t,k)
-				local f=rawget(fields,k)
-				if f then return f(ctor) end
+				if isField(k) then 
+					local f=rawget(fields,k)
+					if f then return f() end
+				end
 			end,
 		})
 		return cls
@@ -65,6 +94,12 @@ namespace SLua
 			down=function() return Vector3(0,-1,0)  end;
 			forward=function() return Vector3(0,0,1)  end;
 			back=function() return Vector3(0,0,-1)  end;
+
+			SmoothDamp=function(current,target,currentVelocity,smoothTime,maxSpeed,deltaTime)
+				maxSpeed = 	maxSpeed or Infinity
+				deltaTime = deltaTime or Time.deltaTime
+				return Vector3.SmoothDampInner(current,target,currentVelocity,smoothTime,maxSpeed,deltaTime)
+			end;
 		},
 
 		{

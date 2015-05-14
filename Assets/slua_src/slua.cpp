@@ -440,4 +440,30 @@ extern "C" {
 		return luaL_loadbuffer(L, buff, (size_t)sz, name);
 	}
 
+
+	int value_type_index(lua_State *L)
+	{
+		luaL_checktype(L, 1, LUA_TTABLE);
+		luaL_checktype(L, 2, LUA_TSTRING);
+
+		lua_getmetatable(L, 1);
+
+
+		lua_pushvalue(L, 2);
+		lua_rawget(L, -2);
+		if (!lua_isnil(L, -1)) {
+			lua_remove(L, -2);
+
+			const char* key = lua_tostring(L, 2);
+			if (islower(key[0])) {
+				lua_pushvalue(L, 1);
+				lua_call(L, 1, 1);
+			}
+			return 1;
+		}
+
+		return 0;
+	}
 }
+
+
