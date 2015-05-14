@@ -42,15 +42,13 @@ function test2()
 end
 
 function test3()
-	print(UnityEngine.Vector3.Lerp)
+	local vv=Vector3.left
 	local start = os.clock()
 	local t={}
 	local m={}
-	for i=1,2 do
-		local t=Vector3(1,2,3)
-		t:Normalize()
-		Vector3.Lerp(t,t,0)
-		print(t.magnitude,t)
+	for i=1,2000000 do
+		local t=Vector3(i,i,i)
+		local n=t.normalized
 	end
 	print("test3/lua " .. (os.clock() - start));
 end
