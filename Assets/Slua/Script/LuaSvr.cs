@@ -63,24 +63,24 @@ namespace SLua
 			LuaCoroutine.reg(luaState.L, lgo);
 			Helper.reg(luaState.L);
 
-			try
-			{
-				LuaDLL.luaS_openextlibs(luaState.L);
-			}
-			catch (Exception)
-			{
-				// do nothing
-			}
+            try
+            {
+                LuaDLL.luaS_openextlibs(luaState.L);
+            }
+            catch (Exception)
+            {
+                // do nothing
+            }
 
-			LuaValueType.init(luaState.L);
+            LuaValueType.init(luaState.L);
 
-			start(main);
+            start(main);
 
 			if (LuaDLL.lua_gettop(luaState.L) != errorReported)
 			{
-				Debug.LogError("Some function not remove temp value from lua stack. You should fix it.");
-				errorReported = LuaDLL.lua_gettop(luaState.L);
-			}
+                errorReported = LuaDLL.lua_gettop(luaState.L);
+                Debug.LogError(string.Format("Some function not remove temp value({0}) from lua stack. You should fix it.", LuaDLL.luaL_typename(luaState.L, errorReported)));
+            }
 		}
 
 		public object start(string main)

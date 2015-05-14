@@ -21,11 +21,6 @@
 // THE SOFTWARE.
 
 
-// *** you can remove slua.c file from xcode on build ios project ***
-
-// *** 这个文件仅用于编译libslua.a，ios发布工程时，可以删除这个文件，避免编译错误。
-
-
 #define MT_VEC2 1
 #define MT_VEC3 2
 #define MT_VEC4 3
@@ -247,8 +242,7 @@ extern "C" {
 	}
 
 	LUA_API void luaS_checkVector3(lua_State *L, int p, float* x, float *y, float *z) {
-		Vector3 v;
-		check_type(L, p, v);
+		Vector3 v = check_type<Vector3>(L, p);
 		*x = v.x;
 		*y = v.y;
 		*z = v.z;

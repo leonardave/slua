@@ -31,10 +31,10 @@ namespace SLua
 		static string code = @"
 	local args={...}
 
-	local function Class(mt,ctor,fields)
+	local function Class(cls,mt,ctor,fields)
 		local rawget=rawget
-		local cls={}
-
+		local cls=cls or {}
+        local setmetatable=setmetatable
 		setmetatable(cls,{
 			__call=function(t,...)
 				local o = ctor(...)
@@ -49,10 +49,9 @@ namespace SLua
 		return cls
 	end
 
-	UnityEngine.Vector3=Class(
-		args[2],
-
-		function(x,y,z)
+	Class( UnityEngine.Vector3, args[2],
+		
+        function(x,y,z)
 			local r={x,y,z}
 			return r
 		end,

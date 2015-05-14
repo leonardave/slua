@@ -29,42 +29,52 @@ extern "C" {
 #include "memory.h"
 }
 #include <functional>
+#include <vector>
+#include <algorithm>
+#include "math.hpp"
 #include "vector3.hpp"
 
-#define kEpsilon 0.00001f
 
-inline void check_type(lua_State *L, int p, float& v) {
-	v = (float)luaL_checknumber(L, p);
+template<class R>
+inline R check_type(lua_State *L, int p);
+
+template<>
+inline float check_type(lua_State *L, int p) {
+	return (float)luaL_checknumber(L, p);
 }
 
-inline void check_type(lua_State *L, int p, Vector3& v) {
+template<>
+inline Vector3 check_type(lua_State *L, int p) {
 	luaL_checktype(L, p, LUA_TTABLE);
-	lua_rawgeti(L, p,1);
+	lua_rawgeti(L, p, 1);
+	Vector3 v;
 	v.x = (float)lua_tonumber(L, -1);
 	lua_rawgeti(L, p, 2);
 	v.y = (float)lua_tonumber(L, -1);
 	lua_rawgeti(L, p, 3);
 	v.z = (float)lua_tonumber(L, -1);
 	lua_pop(L, 3);
+	return v;
 }
 
-inline void check_type(lua_State *L, int p, int& v) {
-	v = luaL_checkint(L, p);
-}
-
-template<int C=0, class H, class ...T>
-inline void check_type(lua_State *L, int p, H& h, T&... Args) {
-	check_type(L, p + C, h);
-	check_type<C+1>(L, p, Args...);
-}
-
-template<int C, class H>
-inline void check_type(lua_State *L, int p, H& h) {
-	check_type(L, p + C, h);
+template<>
+inline int check_type(lua_State *L, int p) {
+	int v = luaL_checkint(L, p);
+	return v;
 }
 
 inline int push_value(lua_State *L, const float& v) {
 	lua_pushnumber(L, v);
+	return 1;
+}
+
+inline int push_value(lua_State *L, std::string&& str) {
+	lua_pushlstring(L, str.c_str(), str.size());
+	return 1;
+}
+
+inline int push_value(lua_State *L, const std::string& str) {
+	lua_pushlstring(L, str.c_str(), str.size());
 	return 1;
 }
 
@@ -79,81 +89,235 @@ int push_value(lua_State *L, const T& v) {
 	return 1;
 }
 
+
+
 template<class T>
 void add_field(lua_State *L, const char* key, const T& v) {
 	push_value(L, v);
 	lua_setfield(L, -2, key);
 }
 
-inline void set_back(lua_State *L, const Vector3& v) {
+inline void set_back(lua_State *L, int p,const Vector3& v) {
 	lua_pushnumber(L, v.x);
 	lua_rawseti(L, 1, 1);
 	lua_pushnumber(L, v.y);
 	lua_rawseti(L, 1, 2);
 	lua_pushnumber(L, v.z);
-	lua_rawseti(L, 1, 3);
+	lua_rawseti(L, p, 3);
 }
 
-template<class F>
-struct LuaFunction {
+template <int... N>
+struct index_tuple
+{};
 
+template <int N, int I, class Indices>
+struct make_index_tuple_aux;
+
+template <int N, int I, int... Indices>
+struct make_index_tuple_aux<N, I, index_tuple<Indices...> >
+	: make_index_tuple_aux < N - 1, I + 1, index_tuple<Indices..., I> >
+{};
+
+template <int I, int... Indices>
+struct make_index_tuple_aux < 0, I, index_tuple<Indices...> >
+{
+	typedef index_tuple<Indices...> type;
+};
+
+template <int N>
+struct make_index_tuple
+	: make_index_tuple_aux < N, 0, index_tuple<> >
+{};
+
+struct void_result
+{};
+
+struct value_result
+{};
+
+template<class R>
+struct make_result_push {
+	typedef value_result type;
+};
+
+template<>
+struct make_result_push<void> {
+	typedef void_result type;
 };
 
 
 
-template <class ...Args>
-struct MethodInfo {};
-
-
-template<class R,class F, class ...A class ...Checker>
-int invoke(lua_State *L,F f,MethodInfo<R,A....>,Checker&& ...chk) 
+template <class F, class RC, class... Args>
+inline void invoke_function(
+	lua_State* L, F const& f, std::false_type, RC 
+	, Args&&... args)
 {
+	push_value(L, f(std::forward<Args>(args)...));
+}
+
+template <class F, class... Args>
+inline void invoke_function(
+	lua_State* L, F const& f, std::false_type, void_result, Args&&... args)
+{
+	f(std::forward<Args>(args)...);
+}
+
+template <class F, class RC, class This, class... Args>
+inline int invoke_function(
+	lua_State* L, F const& f, std::true_type, RC 
+	, This&& this_, Args&&... args)
+{
+	push_value(L, (this_.*f)(std::forward<Args>(args)...));
+	return 1;
+}
+
+template <class F, class This, class... Args>
+inline int invoke_function(
+	lua_State* L, F const& f, std::true_type, void_result, This&& this_, Args&&... args)
+{
+	(this_.*f)(std::forward<Args>(args)...);
 	return 0;
 }
 
-template<class R,class ...A>
-struct LuaFunction< R(A...) > 
-{
-	typedef R(A...) FuncType;
 
-	static FuncType func;
+
+template < class T > 
+struct deduce_type
+{
+	typedef T type;
+};
+
+template < class T >
+struct deduce_type<const T&>
+{
+	typedef T type;
+};
+
+template <class R, class C, class ...A, int ...I>
+int invoke_aux(lua_State *L, R(C::*f)(A...), index_tuple<I...>) {
+	
+	int indices[sizeof...(A)+1] = { I... };
+
+	C self = check_type<deduce_type<C>::type>(L, 1);
+
+	int r = invoke_function(L, f, std::true_type(), make_result_push<R>::type(), self, check_type<deduce_type<A>::type>(L, indices[I])...);
+	set_back(L,1, self);
+	return r;
+}
+
+template <class R, class C, class ...A, int ...I>
+int invoke_aux(lua_State *L, R(C::*f)(A...) const, index_tuple<I...>) {
+
+	int indices[sizeof...(A)+1] = { I... };
+
+	C self = check_type<deduce_type<C>::type>(L, 1);
+
+	int r = invoke_function(L, f, std::true_type(), make_result_push<R>::type(), self, check_type<deduce_type<A>::type>(L, indices[I])...);
+	set_back(L,1, self);
+	return r;
+}
+
+template <class R, class ...A, int ...I>
+int invoke_aux(lua_State *L, R(*f)(A...), index_tuple<I...>) {
+
+	int indices[sizeof...(A)+1] = { I... };
+	invoke_function(L, f, std::false_type(), make_result_push<R>::type(), check_type<deduce_type<A>::type>(L, indices[I]+1)...);
+	return 0;
+}
+
+
+template <class R,class C, class ...A>
+int invoke(lua_State *L,R(C::*f)(A...))
+{
+	return invoke_aux(L, f, make_index_tuple<sizeof...(A)>::type());
+}
+
+template <class R, class C, class ...A>
+int invoke(lua_State *L, R(C::*f)(A...) const)
+{
+	return invoke_aux(L, f, make_index_tuple<sizeof...(A)>::type());
+}
+
+template <class R, class ...A>
+int invoke(lua_State *L, R(*f)(A...))
+{
+	return invoke_aux(L, f, make_index_tuple<sizeof...(A)>::type());
+}
+
+template<class F>
+struct LuaFunction
+{
+	static std::vector<F> func;
 	static int wrap(lua_State *L) {
-		return invoke<R>(L,func,MethodInfo<R,A...>(),checker<I,A>::type()...);
+		int n = lua_tointeger(L, lua_upvalueindex(1));
+		F f = func[n];
+		return invoke(L, f);
 	}
 };
 
-template<class R,class C,class ...A>
-struct LuaFunction< R(C::*)(A...) >
-{
-	typedef R(C::*)(A...) FuncType;
-	static FuncType func;
-	static int wrap(lua_State *L) {
-		return 0;
-	}
-};
+template<class F> 
+std::vector<F> LuaFunction<F>::func;
 
 
 template<class T>
 struct ValueType {
 
 	lua_State *L;
-	ValueType(lua_State *L, const char* name):L(L) {
-		
+	ValueType(lua_State *L,const char* name):L(L) {
+		lua_getglobal(L, "UnityEngine");
+		if (lua_istable(L, -1)) {
+			lua_pushstring(L, name);
+			lua_rawget(L, -2);
+			luaL_newmetatable(L, T::meta_name);
+		}
+		lua_remove(L, 1);
 	}
 
 	template<class F>
 	ValueType<T>& method(const char* name, F func) {
-		LuaFunction<F>::func = func;
-		lua_pushcfunction(L, LuaFunction<F>::wrap);
+		int n = (int) LuaFunction<F>::func.size();
+		LuaFunction<F>::func.push_back(func);
+		lua_pushstring(L, name);
+		lua_pushinteger(L, n);
+		lua_pushcclosure(L, LuaFunction<F>::wrap, 1);
+		lua_rawset(L, -3);
 		return *this;
 	}
 
+	ValueType<T>& method(const char* name, lua_CFunction func) {
+		lua_pushstring(L, name);
+		lua_pushcfunction(L, func);
+		lua_rawset(L, -3);
+		return *this;
+	}
+
+	template<class F>
+	ValueType<T>& func(const char* name, F func) {
+		int n = (int)LuaFunction<F>::func.size();
+		LuaFunction<F>::func.push_back(func);
+		lua_pushstring(L, name);
+		lua_pushinteger(L, n);
+		lua_pushcclosure(L, LuaFunction<F>::wrap, 1);
+		lua_rawset(L, -4);
+		return *this;
+	}
+
+	ValueType<T>& func(const char* name, lua_CFunction func) {
+		lua_pushstring(L, name);
+		lua_pushcfunction(L, func);
+		lua_rawset(L, -4);
+		return *this;
+	}
+
+	void end() {
+		lua_pop(L, 2);
+	}
 };
 
 
 template<class T>
-ValueType<T> class_def(lua_State *L, const char* name) {
-	ValueType<T> vt(L, name);
+ValueType<T> class_def(lua_State *L,const char* name) {
+	ValueType<T> vt(L,name);
 	return vt;
 }
 
