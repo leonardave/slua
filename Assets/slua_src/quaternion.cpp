@@ -35,9 +35,64 @@ extern "C" {
 #include "matrix3x3.hpp"
 #include "quaternion.hpp"
 
-Quaternion Quaternion::Slerp(const Quaternion& from, const Quaternion& to, float t)
-{
+Quaternion Quaternion::identity;
 
+
+inline Quaternion Quaternion::Lerp(const Quaternion& q1, const Quaternion& q2, float t)
+{
+	Quaternion tmpQuat;
+	if (Dot(q1, q2) < 0.f)
+	{
+		tmpQuat.Set(q1.x + t * (-q2.x - q1.x),
+			q1.y + t * (-q2.y - q1.y),
+			q1.z + t * (-q2.z - q1.z),
+			q1.w + t * (-q2.w - q1.w));
+	}
+	else
+	{
+		tmpQuat.Set(q1.x + t * (q2.x - q1.x),
+			q1.y + t * (q2.y - q1.y),
+			q1.z + t * (q2.z - q1.z),
+			q1.w + t * (q2.w - q1.w));
+	}
+	return Normalize(tmpQuat);
+}
+
+Quaternion Quaternion::Slerp(const Quaternion& q1, const Quaternion& q2, float t)
+{
+	float dot = Dot(q1, q2);
+
+	Quaternion tmpQuat;
+	if (dot < 0.0f)
+	{
+		dot = -dot;
+		tmpQuat.Set(-q2.x,
+			-q2.y,
+			-q2.z,
+			-q2.w);
+	}
+	else
+		tmpQuat = q2;
+
+
+	if (dot < 0.95f)
+	{
+		float angle = std::acos(dot);
+		float sinadiv, sinat, sinaomt;
+		sinadiv = 1.0f / std::sin(angle);
+		sinat = std::sin(angle*t);
+		sinaomt = std::sin(angle*(1.0f - t));
+		tmpQuat.Set((q1.x*sinaomt + tmpQuat.x*sinat)*sinadiv,
+			(q1.y*sinaomt + tmpQuat.y*sinat)*sinadiv,
+			(q1.z*sinaomt + tmpQuat.z*sinat)*sinadiv,
+			(q1.w*sinaomt + tmpQuat.w*sinat)*sinadiv);
+		return tmpQuat;
+
+	}
+	else
+	{
+		return Lerp(q1, tmpQuat, t);
+	}
 }
 
 std::string Quaternion::ToString()
@@ -51,38 +106,19 @@ std::string Quaternion::ToString()
 	return str;
 }
 
+
+
 extern "C" void luaopen_quaternion(lua_State *L) {
-// 	class_def<Quaternion>(L, "Quaternion")
-// 		.method("__index", value_type_index)
-// 		.method("__tostring", &Quaternion::ToString)
-// 		.method("__mul", &__mul<Quaternion>)
-// 		.method("__eq", &__eq<Quaternion>)
-// 		.method("__unm", &__unm<Quaternion>)
-// 
-// // 		.method("Normalize", &Vector3::Normalize)
-// // 		.method("ToString", &Vector3::ToString)
-// // 
-// // 		.method("magnitude", &Vector3::magnitude)
-// // 		.method("normalized", &Vector3::normalized)
-// // 		.method("sqrMagnitude", &Vector3::sqrMagnitude)
-// // 
-// // 		.func("Angle", &Vector3::Angle)
-// // 		.func("ClampMagnitude", &Vector3::ClampMagnitude)
-// // 		.func("Cross", &Vector3::Cross)
-// // 		.func("Distance", &Vector3::Distance)
-// 		.func("Dot", &Quaternion::Dot)
-// 		.func("Lerp", &Quaternion::Lerp)
-// // 		.func("Max", &Vector3::Max)
-// // 		.func("Min", &Vector3::Min)
-// // 		.func("MoveTowards", &Vector3::MoveTowards)
-// // 		.func("Normalize", Normalize)
-// // 		.func("OrthoNormalize", &Vector3::OrthoNormalize)
-// // 		.func("Project", &Vector3::Project)
-// // 		.func("ProjectOnPlane", &Vector3::ProjectOnPlane)
-// // 		.func("Reflect", &Vector3::Reflect)
-// 		.func("RotateTowards", &Quaternion::RotateTowards)
-// 		.func("Slerp", &Quaternion::Slerp)
-// 		.func("SmoothDampInner", &Vector3::SmoothDamp)
-/*		.end();*/
+	class_def<Quaternion>(L, "Quaternion")
+		.method("__index", value_type_index)
+		.method("__tostring", &Quaternion::ToString)
+		.method("__mul", &__mul<Quaternion>)
+		.method("__eq", &__eq<Quaternion>)
+		.method("__unm", &__unm<Quaternion>)
+		.func("Dot", &Quaternion::Dot)
+		.func("Lerp", &Quaternion::Lerp)
+		.func("RotateTowards", &Quaternion::RotateTowards)
+		.func("Slerp", &Quaternion::Slerp)
+		.end();
 }
 
