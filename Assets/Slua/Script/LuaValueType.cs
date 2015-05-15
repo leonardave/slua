@@ -104,6 +104,9 @@ namespace SLua
 
 		{
 			Set=function(self,x,y,z) self[1],self[2],self[3]=x,y,z end;
+			x=function(self) return self[1] end;
+			y=function(self) return self[2] end;
+			z=function(self) return self[3] end;
 		}
 	)
 
