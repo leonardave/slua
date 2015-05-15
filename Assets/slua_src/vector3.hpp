@@ -24,7 +24,7 @@
 #define SLUA_VECTOR3_HEADER_
 
 #include <string>
-#include <algorithm>
+#include <cmath>
 
 struct Vector3
 {
@@ -66,7 +66,7 @@ struct Vector3
 	// field
 	float magnitude() const
 	{
-		return std::sqrtf(x*x + y*y + z*z);
+		return std::sqrt(x*x + y*y + z*z);
 	}
 	Vector3 normalized() const;
 	float sqrMagnitude() const{

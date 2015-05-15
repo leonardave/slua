@@ -36,13 +36,6 @@ extern "C" {
 #include "slua.h"
 }
 
-#ifdef _WINDOWS
-#include <float.h>
-#define isnan _isnan
-#else
-#include <math.h>
-#endif
-
 #include "slua.hpp"
 
 extern "C" {
@@ -356,7 +349,7 @@ extern "C" {
 
 
 	static void setelement(lua_State* L, int p, float v, const char* key) {
-		if (!isnan(v)) {
+		if (!std::isnan(v)) {
 			lua_pushstring(L, key);
 			lua_pushnumber(L, v);
 			lua_settable(L, p);
