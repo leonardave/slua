@@ -22,13 +22,6 @@
 
 #define LUA_LIB
 
-extern "C" {
-#include "lua.h"
-#include "lauxlib.h"
-#include "slua.h"
-#include "ctype.h"
-}
-
 #include "slua.hpp"
 #include <limits>
 #include <strstream>
@@ -76,11 +69,7 @@ Vector3 Vector3::normalized() const
 std::string Vector3::ToString()
 {
 	char str[64];
-#ifdef _WINDOWS
-	_snprintf(str, 64, "Vector3(%f,%f,%f)", x,y,z);
-#else
 	snprintf(str, 64, "Vector3(%f,%f,%f)", x,y,z);
-#endif
 	return str;
 }
 

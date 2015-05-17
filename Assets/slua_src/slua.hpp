@@ -27,6 +27,7 @@ extern "C" {
 #include "lua.h"
 #include "lauxlib.h"
 #include "memory.h"
+#include "slua.h"
 }
 #include <functional>
 #include <vector>

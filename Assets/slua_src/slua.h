@@ -27,4 +27,8 @@
 void luaopen_vector3(lua_State *L);
 int value_type_index(lua_State *L);
 
+#ifdef _WIN32
+#define snprintf _snprintf
+#endif
+
 #endif

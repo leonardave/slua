@@ -98,11 +98,7 @@ Quaternion Quaternion::Slerp(const Quaternion& q1, const Quaternion& q2, float t
 std::string Quaternion::ToString()
 {
 	char str[128];
-#ifdef _WINDOWS
-	_snprintf(str, 128, "Quaternion(%f,%f,%f,&f)", x, y, z, w);
-#else
 	snprintf(str, 128, "Quaternion(%f,%f,%f,&f)", x, y, z, w);
-#endif
 	return str;
 }
 

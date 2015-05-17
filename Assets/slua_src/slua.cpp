@@ -28,12 +28,10 @@
 #define MT_COLOR	5
 
 #define LUA_LIB
+
 extern "C" {
-#include "lua.h"
-#include "lauxlib.h"
 #include <stdio.h>
 #include <string.h>
-#include "slua.h"
 }
 
 #include "slua.hpp"
@@ -142,12 +140,7 @@ extern "C" {
 
 	static void getmetatable(lua_State *L, const char* key) {
 		char ns[256];
-#ifdef _WINDOWS
-		_snprintf(ns, 256, "UnityEngine.%s.Instance", key);
-#else
 		snprintf(ns, 256, "UnityEngine.%s.Instance", key);
-#endif
-
 		lua_getfield(L, LUA_REGISTRYINDEX, ns);
 	}
 
