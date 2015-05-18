@@ -198,6 +198,12 @@ inline int invoke_function(
 	return 1;
 }
 
+template <class F, class This>
+inline int invoke_function( lua_State* L, F const& f, This&& this_)
+{
+	return (this_.*f)(L);
+}
+
 template <class F, class This, class... Args>
 inline int invoke_function(
 	lua_State* L, F const& f, std::true_type, void_result, This&& this_, Args&&... args)
@@ -227,8 +233,18 @@ int invoke_aux(lua_State *L, R(C::*f)(A...), index_tuple<I...>) {
 
 	C self = check_type<deduce_type<C>::type>(L, 1);
 
-	int r = invoke_function(L, f, std::true_type(), make_result_push<R>::type(), self, check_type<deduce_type<A>::type>(L, indices[I])...);
+	int r = invoke_function(L, f, std::true_type(), make_result_push<R>::type(), self, check_type<deduce_type<A>::type>(L, indices[I]+1)...);
 	set_back(L,1, self);
+	return r;
+}
+
+template <class R, class C>
+int invoke_aux(lua_State *L, R(C::*f)(lua_State *L)) {
+
+	C self = check_type<deduce_type<C>::type>(L, 1);
+
+	int r = invoke_function(L, f, self);
+	set_back(L, 1, self);
 	return r;
 }
 
@@ -239,7 +255,7 @@ int invoke_aux(lua_State *L, R(C::*f)(A...) const, index_tuple<I...>) {
 
 	C self = check_type<deduce_type<C>::type>(L, 1);
 
-	int r = invoke_function(L, f, std::true_type(), make_result_push<R>::type(), self, check_type<deduce_type<A>::type>(L, indices[I])...);
+	int r = invoke_function(L, f, std::true_type(), make_result_push<R>::type(), self, check_type<deduce_type<A>::type>(L, indices[I]+1)...);
 	set_back(L,1, self);
 	return r;
 }
@@ -256,6 +272,12 @@ template <class R,class C, class ...A>
 int invoke(lua_State *L,R(C::*f)(A...))
 {
 	return invoke_aux(L, f, make_index_tuple<sizeof...(A)>::type());
+}
+
+template <class R, class C>
+int invoke(lua_State *L, R(C::*f)(lua_State *L))
+{
+	return invoke_aux(L, f);
 }
 
 template <class R, class C, class ...A>
@@ -319,6 +341,7 @@ struct ValueType {
 		return *this;
 	}
 
+
 	template<class F>
 	ValueType<T>& func(const char* name, F func) {
 		int n = (int)LuaFunction<F>::func.size();
@@ -349,8 +372,15 @@ ValueType<T> class_def(lua_State *L,const char* name) {
 	return vt;
 }
 
-
-int value_type_index(lua_State *L);
+template<class T>
+bool is_typeof(lua_State *L, int p) {
+	luaL_checktype(L, p, LUA_TTABLE);
+	lua_getmetatable(L, p);
+	lua_getref(L, T::meta_ref);
+	if (lua_rawequal(L, -1, -2))
+		return true;
+	return false;
+}
 
 
 template<class T>

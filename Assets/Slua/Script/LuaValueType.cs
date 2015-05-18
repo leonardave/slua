@@ -71,8 +71,14 @@ namespace SLua
 			end,
 			__index=function(t,k)
 				if isField(k) then 
-					local f=rawget(fields,k)
-					if f then return f() end
+					local f=rawget(fields,'get_'..k)
+					if f then return f(t) end
+				end
+			end,
+			__newindex=function(t,k,v)
+				if isField(k) then 
+					local f=rawget(fields,'set_'..k)
+					if f then return f(t,v) end
 				end
 			end,
 		})
@@ -105,30 +111,42 @@ namespace SLua
 
 		{
 			Set=function(self,x,y,z) self[1],self[2],self[3]=x,y,z end;
-			x=function(self) return self[1] end;
-			y=function(self) return self[2] end;
-			z=function(self) return self[3] end;
+			get_x=function(self) return self[1] end;
+			get_y=function(self) return self[2] end;
+			get_z=function(self) return self[3] end;
+			set_x=function(self,v) self[1]=v end;
+			set_y=function(self,v) self[2]=v end;
+			set_z=function(self,v) self[3]=v end;
 		}
 	)
 
 
 	Class( UnityEngine.Quaternion, args[4],
-		
+
         function(x,y,z,w)
 			local r={x,y,z,w}
 			return r
 		end,
 
 		{
-			identity=function() return Quaternion(0,0,0,1)  end;
+			get_identity=function() return Quaternion(0,0,0,1)  end;
+
+			LookRotation=function(forward,up)
+				up = up or Vector3.up
+				return Quaternion.LookRotationInner(forward,up)
+			end;
 		},
 
 		{
 			Set=function(self,x,y,z,w) self[1],self[2],self[3],self[4]=x,y,z,w end;
-			x=function(self) return self[1] end;
-			y=function(self) return self[2] end;
-			z=function(self) return self[3] end;
-			w=function(self) return self[4] end;
+			get_x=function(self) return self[1] end;
+			get_y=function(self) return self[2] end;
+			get_z=function(self) return self[3] end;
+			get_w=function(self) return self[4] end;
+			set_x=function(self,v) self[1]=v end;
+			set_y=function(self,v) self[2]=v end;
+			set_z=function(self,v) self[3]=v end;
+			set_w=function(self,v) self[4]=v end;
 		}
 	)
 

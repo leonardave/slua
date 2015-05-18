@@ -77,11 +77,7 @@ Vector3 Vector3::normalized() const
 std::string Vector3::ToString()
 {
 	char str[64];
-#ifdef _WINDOWS
-	_snprintf(str, 64, "Vector3(%f,%f,%f)", x,y,z);
-#else
 	snprintf(str, 64, "Vector3(%f,%f,%f)", x,y,z);
-#endif
 	return str;
 }
 
@@ -335,20 +331,18 @@ extern "C" {
 
 		class_def<Vector3>(L, "Vector3")
 			.method("__index", value_type_index)
-			.method("__tostring", &Vector3::ToString)
 			.method("__add", &__add<Vector3>)
 			.method("__sub", &__sub<Vector3>)
 			.method("__mul", &__mul<Vector3>)
 			.method("__div", &__div<Vector3>)
 			.method("__eq", &__eq<Vector3>)
 			.method("__unm", &__unm<Vector3>)
-
+			.method("__tostring", &Vector3::ToString)
 			.method("Normalize", &Vector3::Normalize)
 			.method("ToString", &Vector3::ToString)
-
-			.method("magnitude", &Vector3::magnitude)
-			.method("normalized", &Vector3::normalized)
-			.method("sqrMagnitude", &Vector3::sqrMagnitude)
+			.method("get_magnitude", &Vector3::magnitude)
+			.method("get_normalized", &Vector3::normalized)
+			.method("get_sqrMagnitude", &Vector3::sqrMagnitude)
 
 			.func("Angle", &Vector3::Angle)
 			.func("ClampMagnitude", &Vector3::ClampMagnitude)

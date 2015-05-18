@@ -23,14 +23,28 @@
 #ifndef SLUA_MATRIX3X3_HEADER_
 #define SLUA_MATRIX3X3_HEADER_
 
-#include "vector3.hpp"
+#include "slua.hpp"
 
 struct Matrix3x3
 {
-	float data[9];
+	union
+	{
+		float data[9];
+		float data3x3[3][3];
+	};
+	
 
 	Matrix3x3& SetAxisAngle(const Vector3& rotationAxis, float radians);
 	Vector3 Multiply(const Vector3& inV) const;
+
+	float& Get(int row, int column) 				{ return data[row + (column * 3)]; }
+	const float& Get(int row, int column)const 	{ return data[row + (column * 3)]; }
+
+	Matrix3x3& Matrix3x3::SetFromToRotation(const Vector3& from, const Vector3& to);
+	void SetIdentity();
+	void SetOrthoNormal(const Vector3& inX, const Vector3& inY, const Vector3& inZ);
+
+	static bool MatrixToEuler(const Matrix3x3& matrix, Vector3& v);
 
 };
 

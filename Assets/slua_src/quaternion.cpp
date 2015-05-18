@@ -99,12 +99,41 @@ Quaternion Quaternion::Slerp(const Quaternion& q1, const Quaternion& q2, float t
 std::string Quaternion::ToString()
 {
 	char str[128];
-#ifdef _WINDOWS
-	_snprintf(str, 128, "Quaternion(%f,%f,%f,&f)", x, y, z, w);
-#else
-	snprintf(str, 128, "Quaternion(%f,%f,%f,&f)", x, y, z, w);
-#endif
+	snprintf(str, 128, "Quaternion(%f,%f,%f,%f)", x, y, z, w);
 	return str;
+}
+
+void Quaternion::SetFromToRotation(const Vector3& fromDirection, const Vector3& toDirection)
+{
+	*this=FromToRotation(fromDirection, toDirection);
+}
+
+void Quaternion::SetLookRotation(const Vector3& view, const Vector3& up)
+{
+	*this=LookRotationInner(view, up);
+}
+
+inline void QuaternionToAxisAngle(const Quaternion& q, Vector3& axis, float& targetAngle)
+{
+	targetAngle = 2.0f* std::acos(q.w);
+	if (std::abs(targetAngle-0.0f)<kEpsilon)
+	{
+		axis = Vector3(1, 0, 0);
+		return;
+	}
+
+	float div = 1.0f / std::sqrt(1.0f - q.w*q.w);
+	axis.Set(q.x*div, q.y*div, q.z*div);
+}
+
+int Quaternion::ToAngleAxis(lua_State *L)
+{
+	Vector3 axis;
+	float targetAngle;
+	QuaternionToAxisAngle(*this, axis, targetAngle);
+	//push_value(L, axis);
+	//push_value(L, targetAngle);
+	return 2;
 }
 
 static Quaternion EulerToQuaternion(const Vector3& eulerAngles)
@@ -134,33 +163,252 @@ int Quaternion::Euler(lua_State *L)
 		float x = check_type<float>(L, 1);
 		float y = check_type<float>(L, 2);
 		float z = check_type<float>(L, 3);
-		push_value(L, EulerToQuaternion(Vector3(x, y, z)*ToDegree));
-		return 1;
+		return push_value(L, EulerToQuaternion(Vector3(x, y, z)*ToRadius));
 	}
 	else if (top == 1) {
 		Vector3 v = check_type<Vector3>(L, 1);
-		push_value(L, EulerToQuaternion(v*ToDegree));
-		return 1;
+		return push_value(L, EulerToQuaternion(v*ToRadius));
 	}
 	else
 		luaL_error(L, "invalid parameters passed in");
 	return 0;
 }
 
+Quaternion AxisAngleToQuaternionSafe(const Vector3& axis, float angle)
+{
+	Quaternion q;
+	float mag = axis.magnitude();
+	if (mag > 0.000001F)
+	{
+		float halfAngle = angle * 0.5F;
+
+		q.w = cos(halfAngle);
+
+		float s = sin(halfAngle) / mag;
+		q.x = s * axis.x;
+		q.y = s * axis.y;
+		q.z = s * axis.z;
+		return q;
+	}
+	else
+	{
+		return Quaternion::identity;
+	}
+}
+
+Quaternion Quaternion::AngleAxis(float angle, const Vector3& axis)
+{
+	return AxisAngleToQuaternionSafe(axis, angle*ToRadius);
+}
+
+
+static void MatrixToQuaternion(const Matrix3x3& kRot, Quaternion& q)
+{
+	float fTrace = kRot.Get(0, 0) + kRot.Get(1, 1) + kRot.Get(2, 2);
+	float fRoot;
+
+	if (fTrace > 0.0f)
+	{
+		// |w| > 1/2, may as well choose w > 1/2
+		fRoot = sqrt(fTrace + 1.0f);  // 2w
+		q.w = 0.5f*fRoot;
+		fRoot = 0.5f / fRoot;  // 1/(4w)
+		q.x = (kRot.Get(2, 1) - kRot.Get(1, 2))*fRoot;
+		q.y = (kRot.Get(0, 2) - kRot.Get(2, 0))*fRoot;
+		q.z = (kRot.Get(1, 0) - kRot.Get(0, 1))*fRoot;
+	}
+	else
+	{
+		// |w| <= 1/2
+		int s_iNext[3] = { 1, 2, 0 };
+		int i = 0;
+		if (kRot.Get(1, 1) > kRot.Get(0, 0))
+			i = 1;
+		if (kRot.Get(2, 2) > kRot.Get(i, i))
+			i = 2;
+		int j = s_iNext[i];
+		int k = s_iNext[j];
+
+		fRoot = sqrt(kRot.Get(i, i) - kRot.Get(j, j) - kRot.Get(k, k) + 1.0f);
+		float* apkQuat[3] = { &q.x, &q.y, &q.z };
+		*apkQuat[i] = 0.5f*fRoot;
+		fRoot = 0.5f / fRoot;
+		q.w = (kRot.Get(k, j) - kRot.Get(j, k)) * fRoot;
+		*apkQuat[j] = (kRot.Get(j, i) + kRot.Get(i, j))*fRoot;
+		*apkQuat[k] = (kRot.Get(k, i) + kRot.Get(i, k))*fRoot;
+	}
+	q = Quaternion::Normalize(q);
+}
+
+static Quaternion FromToQuaternion(const Vector3& from, const Vector3& to)
+{
+	Matrix3x3 m;
+	m.SetFromToRotation(from, to);
+	Quaternion q;
+	MatrixToQuaternion(m, q);
+	return q;
+}
+
+Quaternion Quaternion::FromToRotation(const Vector3& fromDirection, const Vector3& toDirection)
+{
+	float lhsMag = fromDirection.magnitude();
+	float rhsMag = toDirection.magnitude();
+	if (lhsMag < kEpsilon || rhsMag < kEpsilon)
+		return Quaternion::identity;
+	else
+		return ::FromToQuaternion(fromDirection / lhsMag, toDirection / rhsMag);
+}
+
+
+bool LookRotationToMatrix(const Vector3& viewVec, const Vector3& upVec, Matrix3x3* m)
+{
+	Vector3 z = viewVec;
+	// compute u0
+	float mag = z.magnitude();
+	if (mag < kEpsilon)
+	{
+		m->SetIdentity();
+		return false;
+	}
+	z /= mag;
+
+	Vector3 x = Vector3::Cross(upVec, z);
+	mag = x.magnitude();
+	if (mag < kEpsilon)
+	{
+		m->SetIdentity();
+		return false;
+	}
+	x /= mag;
+
+	Vector3 y(Vector3::Cross(z, x));
+	if (std::abs(y.sqrMagnitude()-1.f)<kEpsilon)
+		return false;
+
+	m->SetOrthoNormal(x, y, z);
+	return true;
+}
+
+bool Quaternion::LookRotationToQuaternion(const Vector3& viewVec, const Vector3& upVec, Quaternion* res)
+{
+	Matrix3x3 m;
+	if (!LookRotationToMatrix(viewVec, upVec, &m))
+		return false;
+	MatrixToQuaternion(m, *res);
+	return true;
+}
+
+Quaternion Quaternion::LookRotationInner(const Vector3& forward, const Vector3& upwards)
+{
+	Quaternion q = Quaternion::identity;
+	if (!LookRotationToQuaternion(forward, upwards, &q))
+	{
+		float mag = forward.magnitude();
+		if (mag > kEpsilon)
+		{
+			Matrix3x3 m;
+			m.SetFromToRotation(Vector3(0,0,1), forward / mag);
+			MatrixToQuaternion(m, q);
+		}
+		else
+		{
+			return Quaternion::identity;
+		}
+	}
+	return q;
+}
+
+void QuaternionToMatrix(const Quaternion& q, Matrix3x3& m)
+{
+	// Precalculate coordinate products
+	float x = q.x * 2.0F;
+	float y = q.y * 2.0F;
+	float z = q.z * 2.0F;
+	float xx = q.x * x;
+	float yy = q.y * y;
+	float zz = q.z * z;
+	float xy = q.x * y;
+	float xz = q.x * z;
+	float yz = q.y * z;
+	float wx = q.w * x;
+	float wy = q.w * y;
+	float wz = q.w * z;
+
+	// Calculate 3x3 matrix from orthonormal basis
+	m.data[0] = 1.0f - (yy + zz);
+	m.data[1] = xy + wz;
+	m.data[2] = xz - wy;
+
+	m.data[3] = xy - wz;
+	m.data[4] = 1.0f - (xx + zz);
+	m.data[5] = yz + wx;
+
+	m.data[6] = xz + wy;
+	m.data[7] = yz - wx;
+	m.data[8] = 1.0f - (xx + yy);
+}
+
+Vector3 Quaternion::QuaternionToEuler(const Quaternion& q)
+{
+	Matrix3x3 m;
+	Vector3 rot;
+	QuaternionToMatrix(q, m);
+	Matrix3x3::MatrixToEuler(m, rot);
+	return rot;
+}
+
+Vector3 Quaternion::get_eulerAngles()
+{
+	Quaternion outRotation = Normalize(*this);
+	return QuaternionToEuler(outRotation);
+}
+
+void Quaternion::set_eulerAngles(const Vector3& v)
+{
+	*this = EulerToQuaternion(v*ToRadius);
+}
+
+
+
+
+static int __mul(lua_State *L) {
+	if (is_typeof<Vector3>(L, 2)) {
+		Quaternion q = check_type<Quaternion>(L, 1);
+		Vector3 v = check_type<Vector3>(L, 2);
+		return push_value(L, q*v);
+	}
+	else {
+		Quaternion q1 = check_type<Quaternion>(L, 1);
+		Quaternion q2 = check_type<Quaternion>(L, 2);
+		return push_value(L, q1*q2);
+	}
+}
 
 
 extern "C" void luaopen_quaternion(lua_State *L) {
 	class_def<Quaternion>(L, "Quaternion")
 		.method("__index", value_type_index)
-		.method("__tostring", &Quaternion::ToString)
-		.method("__mul", &__mul<Quaternion>)
+		.method("__newindex", value_type_newindex)
+		.method("__mul", &__mul)
 		.method("__eq", &__eq<Quaternion>)
 		.method("__unm", &__unm<Quaternion>)
+		.method("__tostring", &Quaternion::ToString)
+		.method("get_eulerAngles", &Quaternion::get_eulerAngles)
+		.method("set_eulerAngles", &Quaternion::set_eulerAngles)
+		.method("ToString", &Quaternion::ToString)
+		.method("SetFromToRotation", &Quaternion::SetFromToRotation)
+		.method("SetLookRotation", &Quaternion::SetLookRotation)
+		.method("ToAngleAxis", &Quaternion::ToAngleAxis)
+		.func("Angle", &Quaternion::Angle)
+		.func("AngleAxis", &Quaternion::AngleAxis)
 		.func("Dot", &Quaternion::Dot)
 		.func("Lerp", &Quaternion::Lerp)
 		.func("RotateTowards", &Quaternion::RotateTowards)
 		.func("Slerp", &Quaternion::Slerp)
 		.func("Euler", &Quaternion::Euler)
+		.func("FromToRotation", &Quaternion::FromToRotation)
+		.func("Inverse", &Quaternion::Inverse)
+		.func("LookRotationInner", &Quaternion::LookRotationInner)
 		.end();
 }
 

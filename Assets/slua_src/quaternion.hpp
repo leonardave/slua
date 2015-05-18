@@ -37,10 +37,16 @@ struct Quaternion {
 		Set(inX, inY, inZ, inW);
 	}
 
+	Vector3 get_eulerAngles();
+	void set_eulerAngles(const Vector3& v);
+
 	inline void Set(float inX, float inY, float inZ, float inW) {
 		x = inX; y = inY; z = inZ; w = inW;
 	}
 	std::string ToString();
+	void SetFromToRotation(const Vector3& fromDirection, const Vector3& toDirection);
+	void SetLookRotation(const Vector3& view, const Vector3& up);
+	int ToAngleAxis(lua_State *L);
 
 	static Quaternion Normalize(const Quaternion& q) { 
 		float mag = Magnitude(q);
@@ -77,6 +83,8 @@ struct Quaternion {
 	{
 		return ((std::acos(std::min(std::abs(Dot(a, b)), 1.f)) * 2.f) * ToAngle);
 	}
+	static Quaternion AngleAxis(float angle, const Vector3& axis);
+
 	static Quaternion Slerp(const Quaternion& from, const Quaternion& to, float t);
 	static Quaternion Lerp(const Quaternion& from, const Quaternion& to, float t);
 	static Quaternion RotateTowards(const Quaternion& from, const Quaternion& to, float maxDegreesDelta)
@@ -90,6 +98,15 @@ struct Quaternion {
 		return Slerp(from, to, t);
 	}
 	static int Euler(lua_State *L);
+	static Quaternion FromToRotation(const Vector3& fromDirection, const Vector3& toDirection);
+	static Quaternion Inverse(const Quaternion& q) {
+		return Quaternion(-q.x, -q.y, -q.z, q.w);
+	}
+	static Quaternion LookRotationInner(const Vector3& forward, const Vector3& upwards);
+
+	static bool LookRotationToQuaternion(const Vector3& viewVec, const Vector3& upVec, Quaternion* res);
+
+	static Vector3 QuaternionToEuler(const Quaternion& q);
 
 	friend Quaternion operator + (const Quaternion& lhs, const Quaternion& rhs)
 	{
@@ -111,6 +128,27 @@ struct Quaternion {
 	Quaternion	operator * (const float s) const
 	{
 		return Quaternion(x*s, y*s, z*s, w*s);
+	}
+
+	Vector3 operator * (const Vector3 & point) const {
+		Vector3 vector;
+		float num = x * 2.f;
+		float num2 = y * 2.f;
+		float num3 = z * 2.f;
+		float num4 = x * num;
+		float num5 = y * num2;
+		float num6 = z * num3;
+		float num7 = x * num2;
+		float num8 = x * num3;
+		float num9 = y * num3;
+		float num10 = w * num;
+		float num11 = w * num2;
+		float num12 = w * num3;
+		vector.x = (((1.f - (num5 + num6)) * point.x) + ((num7 - num12) * point.y)) + ((num8 + num11) * point.z);
+		vector.y = (((num7 + num12) * point.x) + ((1.f - (num4 + num6)) * point.y)) + ((num9 - num10) * point.z);
+		vector.z = (((num8 - num11) * point.x) + ((num9 + num10) * point.y)) + ((1.f - (num4 + num5)) * point.z);
+		return vector;
+
 	}
 
 	friend Quaternion	operator * (float s, const Quaternion& q)

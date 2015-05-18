@@ -150,11 +150,7 @@ extern "C" {
 
 	static void getmetatable(lua_State *L, const char* key) {
 		char ns[256];
-#ifdef _WINDOWS
-		_snprintf(ns, 256, "UnityEngine.%s.Instance", key);
-#else
 		snprintf(ns, 256, "UnityEngine.%s.Instance", key);
-#endif
 
 		lua_getfield(L, LUA_REGISTRYINDEX, ns);
 	}
@@ -477,20 +473,58 @@ extern "C" {
 
 		lua_getmetatable(L, 1);
 
+		const char* key = lua_tostring(L, 2);
+		if (islower(key[0])) {
+			char buf[128];
+			snprintf(buf, 128, "get_%s", key);
 
-		lua_pushvalue(L, 2);
-		lua_rawget(L, -2);
-		if (!lua_isnil(L, -1)) {
-			lua_remove(L, -2);
+			lua_pushstring(L, buf);
+			lua_rawget(L, -2);
+			if (lua_isnil(L, -1)) 
+				luaL_error(L, "not found %s to get", key);
 
-			const char* key = lua_tostring(L, 2);
-			if (islower(key[0])) {
-				lua_pushvalue(L, 1);
-				lua_call(L, 1, 1);
-			}
+			lua_remove(L, -2); //remove mt
+
+			lua_pushvalue(L, 1);
+			lua_call(L, 1, 1);
 			return 1;
 		}
+		else {
+			lua_pushvalue(L, 2);
+			lua_rawget(L, -2);
+			if (lua_isnil(L, -1))
+				luaL_error(L, "not found function %s", key);
+			lua_remove(L, -2); //remove mt
+			return 1;
+		}
+	}
 
+
+	int value_type_newindex(lua_State *L)
+	{
+		luaL_checktype(L, 1, LUA_TTABLE);
+		luaL_checktype(L, 2, LUA_TSTRING);
+
+		lua_getmetatable(L, 1);
+
+		const char* key = lua_tostring(L, 2);
+		if (islower(key[0])) {
+			char buf[128];
+			snprintf(buf, 128, "set_%s", key);
+
+			lua_pushstring(L, buf);
+			lua_rawget(L, -2);
+			if (lua_isnil(L, -1))
+				luaL_error(L, "not found %s to set", key);
+
+			lua_remove(L, -2); //remove mt
+
+			lua_pushvalue(L, 1);
+			lua_pushvalue(L, 3);
+			lua_call(L, 2, 0);
+			return 0;
+		}
+		luaL_error(L, "not found %s", key);
 		return 0;
 	}
 }

@@ -26,7 +26,7 @@
 #define kEpsilon 0.00001f
 #define kPI 3.14159265358979323846264338327950288419716939937510f
 #define ToAngle 57.29578f
-#define ToDegree 0.01745329f
+#define ToRadius 0.01745329f
 
 namespace SMath {
 
