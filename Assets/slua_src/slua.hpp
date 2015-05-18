@@ -316,6 +316,10 @@ struct ValueType {
 		if (lua_istable(L, -1)) {
 			lua_pushstring(L, name);
 			lua_rawget(L, -2);
+			if (lua_isnil(L, -1)) {
+				lua_pop(L, 1);
+				lua_newtable(L);
+			}
 			luaL_newmetatable(L, T::meta_name);
 			lua_pushvalue(L, -1);
 			T::meta_ref = luaL_ref(L, LUA_REGISTRYINDEX);
