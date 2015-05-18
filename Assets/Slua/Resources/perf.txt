@@ -46,7 +46,7 @@ function test3()
 	local start = os.clock()
 	local t={}
 	local m={}
-	for i=1,200000 do
+	for i=1,2000000 do -- 2,000,000
 		local t=Vector3(i,i,i)
 		local n=t.normalized
 	end
