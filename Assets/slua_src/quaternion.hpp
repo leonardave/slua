@@ -32,7 +32,7 @@ struct Quaternion {
 		float data[4];
 	};
 
-	Quaternion() {}
+	Quaternion() = default;
 	Quaternion(float inX, float inY, float inZ, float inW) {
 		Set(inX, inY, inZ, inW);
 	}

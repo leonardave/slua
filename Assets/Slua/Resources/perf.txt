@@ -81,8 +81,8 @@ function test6()
 	local transform=cube.transform
 	local start = os.clock()
 	for i=1,200000 do
-		local t=Quaternion.Euler(100,100,100)
-		local q=Quaternion.Slerp(Quaternion.identity,t,0.5)
+		local t=Quaternion.Euler(i,i,i)
+		local q=Quaternion.Slerp(Quaternion.identity,t,i/200000)
 	end
 	print("test6/lua " .. (os.clock() - start));
 end

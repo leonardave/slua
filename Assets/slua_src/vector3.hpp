@@ -33,9 +33,8 @@ struct Vector3
 		float data[3];
 	};
 
-	Vector3() : x(0.f), y(0.f), z(0.f) {}
+	Vector3() = default;
 	Vector3(float inX, float inY, float inZ)	{ x = inX; y = inY; z = inZ; }
-	explicit Vector3(const float* array)	{ x = array[0]; y = array[1]; z = array[2]; }
 	void Set(float inX, float inY, float inZ)	{ x = inX; y = inY; z = inZ; }
 
 	float& operator[] (int i)						{ return data[i]; }

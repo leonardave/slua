@@ -92,11 +92,6 @@ inline int push_value(lua_State *L, const float& v) {
 	return 1;
 }
 
-inline int push_value(lua_State *L, std::string&& str) {
-	lua_pushlstring(L, str.c_str(), str.size());
-	return 1;
-}
-
 inline int push_value(lua_State *L, const std::string& str) {
 	lua_pushlstring(L, str.c_str(), str.size());
 	return 1;
@@ -119,7 +114,6 @@ int push_value(lua_State *L, const T& v) {
 	lua_setmetatable(L, -2);
 	return 1;
 }
-
 
 
 template<class T>
@@ -332,6 +326,8 @@ struct ValueType {
 			}
 			luaL_newmetatable(L, T::meta_name);
 			lua_pushvalue(L, -1);
+			lua_pushstring(L, name);
+			lua_setfield(L, -2, "__typename");
 			T::meta_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 		}
 		lua_remove(L, 1);
