@@ -108,7 +108,7 @@ void Quaternion::SetFromToRotation(const Vector3& fromDirection, const Vector3& 
 	*this=FromToRotation(fromDirection, toDirection);
 }
 
-void Quaternion::SetLookRotation(const Vector3& view, const Vector3& up)
+void Quaternion::SetLookRotationInner(const Vector3& view, const Vector3& up)
 {
 	*this=LookRotationInner(view, up);
 }
@@ -131,8 +131,8 @@ int Quaternion::ToAngleAxis(lua_State *L)
 	Vector3 axis;
 	float targetAngle;
 	QuaternionToAxisAngle(*this, axis, targetAngle);
-	//push_value(L, axis);
-	//push_value(L, targetAngle);
+	push_value(L, axis);
+	push_value(L, targetAngle*ToAngle);
 	return 2;
 }
 
@@ -174,7 +174,7 @@ int Quaternion::Euler(lua_State *L)
 	return 0;
 }
 
-Quaternion AxisAngleToQuaternionSafe(const Vector3& axis, float angle)
+Quaternion AxisAngleToQuaternion(const Vector3& axis, float angle)
 {
 	Quaternion q;
 	float mag = axis.magnitude();
@@ -198,7 +198,7 @@ Quaternion AxisAngleToQuaternionSafe(const Vector3& axis, float angle)
 
 Quaternion Quaternion::AngleAxis(float angle, const Vector3& axis)
 {
-	return AxisAngleToQuaternionSafe(axis, angle*ToRadius);
+	return AxisAngleToQuaternion(axis, angle*ToRadius);
 }
 
 
@@ -397,7 +397,7 @@ extern "C" void luaopen_quaternion(lua_State *L) {
 		.method("set_eulerAngles", &Quaternion::set_eulerAngles)
 		.method("ToString", &Quaternion::ToString)
 		.method("SetFromToRotation", &Quaternion::SetFromToRotation)
-		.method("SetLookRotation", &Quaternion::SetLookRotation)
+		.method("SetLookRotationInner", &Quaternion::SetLookRotationInner)
 		.method("ToAngleAxis", &Quaternion::ToAngleAxis)
 		.func("Angle", &Quaternion::Angle)
 		.func("AngleAxis", &Quaternion::AngleAxis)

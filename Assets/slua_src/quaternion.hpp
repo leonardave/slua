@@ -45,7 +45,7 @@ struct Quaternion {
 	}
 	std::string ToString();
 	void SetFromToRotation(const Vector3& fromDirection, const Vector3& toDirection);
-	void SetLookRotation(const Vector3& view, const Vector3& up);
+	void SetLookRotationInner(const Vector3& view, const Vector3& up);
 	int ToAngleAxis(lua_State *L);
 
 	static Quaternion Normalize(const Quaternion& q) { 

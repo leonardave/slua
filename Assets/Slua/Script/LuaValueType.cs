@@ -139,6 +139,10 @@ namespace SLua
 
 		{
 			Set=function(self,x,y,z,w) self[1],self[2],self[3],self[4]=x,y,z,w end;
+			SetLookRotation=function(self,forward,up)
+				up=up or Vector3.up
+				self:SetLookRotationInner(forward,up)
+			end;
 			get_x=function(self) return self[1] end;
 			get_y=function(self) return self[2] end;
 			get_z=function(self) return self[3] end;
