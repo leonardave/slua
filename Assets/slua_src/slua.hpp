@@ -33,7 +33,7 @@ extern "C" {
 #include <algorithm>
 #include "math.hpp"
 #include "vector3.hpp"
-
+#include "quaternion.hpp"
 
 template<class R>
 inline R check_type(lua_State *L, int p);
@@ -44,7 +44,8 @@ inline float check_type(lua_State *L, int p) {
 }
 
 template<>
-inline Vector3 check_type(lua_State *L, int p) {
+inline Vector3 check_type(lua_State *L, int p)
+{
 	luaL_checktype(L, p, LUA_TTABLE);
 	lua_rawgeti(L, p, 1);
 	Vector3 v;
@@ -54,6 +55,23 @@ inline Vector3 check_type(lua_State *L, int p) {
 	lua_rawgeti(L, p, 3);
 	v.z = (float)lua_tonumber(L, -1);
 	lua_pop(L, 3);
+	return v;
+}
+
+template<>
+inline Quaternion check_type(lua_State *L, int p)
+{
+	luaL_checktype(L, p, LUA_TTABLE);
+	lua_rawgeti(L, p, 1);
+	Quaternion v;
+	v.x = (float)lua_tonumber(L, -1);
+	lua_rawgeti(L, p, 2);
+	v.y = (float)lua_tonumber(L, -1);
+	lua_rawgeti(L, p, 3);
+	v.z = (float)lua_tonumber(L, -1);
+	lua_rawgeti(L, p, 4);
+	v.w = (float)lua_tonumber(L, -1);
+	lua_pop(L, 4);
 	return v;
 }
 
@@ -104,13 +122,13 @@ void add_field(lua_State *L, const char* key, const T& v) {
 	lua_setfield(L, -2, key);
 }
 
-inline void set_back(lua_State *L, int p,const Vector3& v) {
-	lua_pushnumber(L, v.x);
-	lua_rawseti(L, 1, 1);
-	lua_pushnumber(L, v.y);
-	lua_rawseti(L, 1, 2);
-	lua_pushnumber(L, v.z);
-	lua_rawseti(L, p, 3);
+template<class T>
+inline void set_back(lua_State *L, int p,const T& v) {
+	int count = sizeof(v.data) / sizeof(v.data[0]);
+	for (int n = 0; n < count; ++n) {
+		lua_pushnumber(L, v.data[n]);
+		lua_rawseti(L, p, n + 1);
+	}
 }
 
 template <int... N>
@@ -341,28 +359,28 @@ inline bool __eq(const T& a, const T& b) {
 }
 
 template<class T>
-inline Vector3 __add(const T& a, const T& b) {
+inline T __add(const T& a, const T& b) {
 	return a + b;
 }
 
 template<class T>
-inline Vector3 __sub(const T& a, const T& b) {
+inline T __sub(const T& a, const T& b) {
 	return a - b;
 }
 
 template<class T>
-inline Vector3 __mul(const T& a, float b) {
+inline T __mul(const T& a, float b) {
 	return a * b;
 }
 
 template<class T>
-inline Vector3 __div(const T& a, float b) {
+inline T __div(const T& a, float b) {
 	return a / b;
 }
 
 
 template<class T>
-inline Vector3 __unm(const T& a) {
+inline T __unm(const T& a) {
 	return -a;
 }
 

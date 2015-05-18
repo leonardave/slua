@@ -32,6 +32,7 @@ namespace SLua
 	local args={...}
 	local Infinity = 1.0 / 0.0
 	local Vector3 = UnityEngine.Vector3
+	local Quaternion = UnityEngine.Quaternion
 	local Time = UnityEngine.Time
 
 	local function Class(cls,base,ctor,static,instance)
@@ -110,6 +111,27 @@ namespace SLua
 		}
 	)
 
+
+	Class( UnityEngine.Quaternion, args[4],
+		
+        function(x,y,z,w)
+			local r={x,y,z,w}
+			return r
+		end,
+
+		{
+			identity=function() return Quaternion(0,0,0,1)  end;
+		},
+
+		{
+			Set=function(self,x,y,z,w) self[1],self[2],self[3],self[4]=x,y,z,w end;
+			x=function(self) return self[1] end;
+			y=function(self) return self[2] end;
+			z=function(self) return self[3] end;
+			w=function(self) return self[4] end;
+		}
+	)
+
 ";
 		static internal void init(IntPtr l)
 		{
@@ -123,11 +145,11 @@ namespace SLua
 				throw new Exception(errstr);			
 			}
 
+			LuaDLL.luaL_getmetatable(l, "Slua_Vector2_Meta");
 			LuaDLL.luaL_getmetatable(l, "Slua_Vector3_Meta");
-			LuaDLL.luaL_getmetatable(l, "Slua_Vector3_Meta");
-			LuaDLL.luaL_getmetatable(l, "Slua_Vector3_Meta");
-			LuaDLL.luaL_getmetatable(l, "Slua_Vector3_Meta");
-			LuaDLL.luaL_getmetatable(l, "Slua_Vector3_Meta");
+			LuaDLL.luaL_getmetatable(l, "Slua_Vector4_Meta");
+			LuaDLL.luaL_getmetatable(l, "Slua_Quaternion_Meta");
+			LuaDLL.luaL_getmetatable(l, "Slua_Color_Meta");
 			
 			LuaDLL.lua_pcall(l, 5, 0, err);
 			LuaDLL.lua_settop(l, 0);

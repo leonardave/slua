@@ -33,7 +33,9 @@ struct Quaternion {
 	};
 
 	Quaternion() {}
-	Quaternion(float inX, float inY, float inZ, float inW);
+	Quaternion(float inX, float inY, float inZ, float inW) {
+		Set(inX, inY, inZ, inW);
+	}
 
 	inline void Set(float inX, float inY, float inZ, float inW) {
 		x = inX; y = inY; z = inZ; w = inW;
@@ -71,8 +73,23 @@ struct Quaternion {
 	Quaternion&	operator *= (const Quaternion& 	aQuat);
 	Quaternion&	operator /= (const float     	aScalar);
 
+	static float Angle(const Quaternion& a, const Quaternion& b)
+	{
+		return ((std::acos(std::min(std::abs(Dot(a, b)), 1.f)) * 2.f) * ToAngle);
+	}
 	static Quaternion Slerp(const Quaternion& from, const Quaternion& to, float t);
 	static Quaternion Lerp(const Quaternion& from, const Quaternion& to, float t);
+	static Quaternion RotateTowards(const Quaternion& from, const Quaternion& to, float maxDegreesDelta)
+	{
+		float num = Angle(from, to);
+		if (num == 0.f)
+		{
+			return to;
+		}
+		float t = std::min(1.f, maxDegreesDelta / num);
+		return Slerp(from, to, t);
+	}
+	static int Euler(lua_State *L);
 
 	friend Quaternion operator + (const Quaternion& lhs, const Quaternion& rhs)
 	{
@@ -96,13 +113,13 @@ struct Quaternion {
 		return Quaternion(x*s, y*s, z*s, w*s);
 	}
 
-	friend Quaternion	operator * (const float s, const Quaternion& q)
+	friend Quaternion	operator * (float s, const Quaternion& q)
 	{
 		Quaternion t(q);
 		return t *= s;
 	}
 
-	friend Quaternion	operator / (const Quaternion& q, const float s)
+	friend Quaternion	operator / (const Quaternion& q, float s)
 	{
 		Quaternion t(q);
 		return t /= s;
@@ -118,7 +135,8 @@ struct Quaternion {
 	}
 
 	static Quaternion identity;
-
+	static const char* meta_name;
+	static int meta_ref;
 };
 
 

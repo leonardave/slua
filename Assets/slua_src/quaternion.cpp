@@ -20,6 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#define LUA_LIB
+
 extern "C" {
 #include "lua.h"
 #include "lauxlib.h"
@@ -36,6 +38,8 @@ extern "C" {
 #include "quaternion.hpp"
 
 Quaternion Quaternion::identity;
+const char* Quaternion::meta_name = "Slua_Quaternion_Meta";
+int Quaternion::meta_ref = LUA_NOREF;
 
 
 inline Quaternion Quaternion::Lerp(const Quaternion& q1, const Quaternion& q2, float t)
@@ -66,10 +70,7 @@ Quaternion Quaternion::Slerp(const Quaternion& q1, const Quaternion& q2, float t
 	if (dot < 0.0f)
 	{
 		dot = -dot;
-		tmpQuat.Set(-q2.x,
-			-q2.y,
-			-q2.z,
-			-q2.w);
+		tmpQuat.Set(-q2.x,-q2.y,-q2.z,-q2.w);
 	}
 	else
 		tmpQuat = q2;
@@ -106,6 +107,46 @@ std::string Quaternion::ToString()
 	return str;
 }
 
+static Quaternion EulerToQuaternion(const Vector3& eulerAngles)
+{
+	float cX(std::cos(eulerAngles.x / 2.0f));
+	float sX(std::sin(eulerAngles.x / 2.0f));
+
+	float cY(std::cos(eulerAngles.y / 2.0f));
+	float sY(std::sin(eulerAngles.y / 2.0f));
+
+	float cZ(std::cos(eulerAngles.z / 2.0f));
+	float sZ(std::sin(eulerAngles.z / 2.0f));
+
+	Quaternion qX(sX, 0.0F, 0.0F, cX);
+	Quaternion qY(0.0F, sY, 0.0F, cY);
+	Quaternion qZ(0.0F, 0.0F, sZ, cZ);
+
+	Quaternion q = (qY * qX) * qZ;
+	return q;
+}
+
+int Quaternion::Euler(lua_State *L)
+{
+	int top = lua_gettop(L);
+	if (top == 3)
+	{
+		float x = check_type<float>(L, 1);
+		float y = check_type<float>(L, 2);
+		float z = check_type<float>(L, 3);
+		push_value(L, EulerToQuaternion(Vector3(x, y, z)*ToDegree));
+		return 1;
+	}
+	else if (top == 1) {
+		Vector3 v = check_type<Vector3>(L, 1);
+		push_value(L, EulerToQuaternion(v*ToDegree));
+		return 1;
+	}
+	else
+		luaL_error(L, "invalid parameters passed in");
+	return 0;
+}
+
 
 
 extern "C" void luaopen_quaternion(lua_State *L) {
@@ -119,6 +160,7 @@ extern "C" void luaopen_quaternion(lua_State *L) {
 		.func("Lerp", &Quaternion::Lerp)
 		.func("RotateTowards", &Quaternion::RotateTowards)
 		.func("Slerp", &Quaternion::Slerp)
+		.func("Euler", &Quaternion::Euler)
 		.end();
 }
 

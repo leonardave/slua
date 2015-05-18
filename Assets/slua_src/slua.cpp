@@ -94,6 +94,7 @@ extern "C" {
 		lua_pop(L, 1);
 
 		luaopen_vector3(L);
+		luaopen_quaternion(L);
 	}
 
 	LUA_API void luaS_newuserdata(lua_State *L, int val)
