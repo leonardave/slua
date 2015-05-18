@@ -27,10 +27,16 @@ extern "C" {
 #include "lua.h"
 #include "lauxlib.h"
 #include "memory.h"
+#include "slua.h"
 }
+#include <string>
 #include <functional>
 #include <vector>
+#include <cmath>
+#ifdef _WIN32
 #include <algorithm>
+#endif
+#include <utility>
 #include "math.hpp"
 #include "vector3.hpp"
 #include "quaternion.hpp"
@@ -160,6 +166,9 @@ struct void_result
 struct value_result
 {};
 
+struct true_type {};
+struct false_type {};
+
 template<class R>
 struct make_result_push {
 	typedef value_result type;
@@ -174,7 +183,7 @@ struct make_result_push<void> {
 
 template <class F, class RC, class... Args>
 inline int invoke_function(
-	lua_State* L, F const& f, std::false_type, RC 
+	lua_State* L, F const& f, false_type, RC 
 	, Args&&... args)
 {
 	push_value(L, f(std::forward<Args>(args)...));
@@ -183,7 +192,7 @@ inline int invoke_function(
 
 template <class F, class... Args>
 inline int invoke_function(
-	lua_State* L, F const& f, std::false_type, void_result, Args&&... args)
+	lua_State* L, F const& f, false_type, void_result, Args&&... args)
 {
 	f(std::forward<Args>(args)...);
 	return 0;
@@ -191,7 +200,7 @@ inline int invoke_function(
 
 template <class F, class RC, class This, class... Args>
 inline int invoke_function(
-	lua_State* L, F const& f, std::true_type, RC 
+	lua_State* L, F const& f, true_type, RC 
 	, This&& this_, Args&&... args)
 {
 	push_value(L, (this_.*f)(std::forward<Args>(args)...));
@@ -206,7 +215,7 @@ inline int invoke_function( lua_State* L, F const& f, This&& this_)
 
 template <class F, class This, class... Args>
 inline int invoke_function(
-	lua_State* L, F const& f, std::true_type, void_result, This&& this_, Args&&... args)
+	lua_State* L, F const& f, true_type, void_result, This&& this_, Args&&... args)
 {
 	(this_.*f)(std::forward<Args>(args)...);
 	return 0;
@@ -231,9 +240,9 @@ int invoke_aux(lua_State *L, R(C::*f)(A...), index_tuple<I...>) {
 	
 	int indices[sizeof...(A)+1] = { I... };
 
-	C self = check_type<deduce_type<C>::type>(L, 1);
+	C self = check_type<typename deduce_type<C>::type>(L, 1);
 
-	int r = invoke_function(L, f, std::true_type(), make_result_push<R>::type(), self, check_type<deduce_type<A>::type>(L, indices[I]+1)...);
+	int r = invoke_function(L, f, true_type(), make_result_push<R>::type(), self, check_type<typename deduce_type<A>::type>(L, indices[I]+1)...);
 	set_back(L,1, self);
 	return r;
 }
@@ -253,9 +262,9 @@ int invoke_aux(lua_State *L, R(C::*f)(A...) const, index_tuple<I...>) {
 
 	int indices[sizeof...(A)+1] = { I... };
 
-	C self = check_type<deduce_type<C>::type>(L, 1);
+	C self = check_type<typename deduce_type<C>::type>(L, 1);
 
-	int r = invoke_function(L, f, std::true_type(), make_result_push<R>::type(), self, check_type<deduce_type<A>::type>(L, indices[I]+1)...);
+	int r = invoke_function(L, f, true_type(), make_result_push<R>::type(), self, check_type<typename deduce_type<A>::type>(L, indices[I]+1)...);
 	set_back(L,1, self);
 	return r;
 }
@@ -264,14 +273,15 @@ template <class R, class ...A, int ...I>
 int invoke_aux(lua_State *L, R(*f)(A...), index_tuple<I...>) {
 
 	int indices[sizeof...(A)+1] = { I... };
-	return invoke_function(L, f, std::false_type(), make_result_push<R>::type(), check_type<deduce_type<A>::type>(L, indices[I]+1)...);
+	return invoke_function(L, f, false_type(), typename make_result_push<R>::type(), 
+		check_type<typename deduce_type<A>::type>(L, indices[I]+1)...);
 }
 
 
 template <class R,class C, class ...A>
 int invoke(lua_State *L,R(C::*f)(A...))
 {
-	return invoke_aux(L, f, make_index_tuple<sizeof...(A)>::type());
+	return invoke_aux(L, f, typename make_index_tuple<sizeof...(A)>::type());
 }
 
 template <class R, class C>
@@ -283,13 +293,13 @@ int invoke(lua_State *L, R(C::*f)(lua_State *L))
 template <class R, class C, class ...A>
 int invoke(lua_State *L, R(C::*f)(A...) const)
 {
-	return invoke_aux(L, f, make_index_tuple<sizeof...(A)>::type());
+	return invoke_aux(L, f, typename make_index_tuple<sizeof...(A)>::type());
 }
 
 template <class R, class ...A>
 int invoke(lua_State *L, R(*f)(A...))
 {
-	return invoke_aux(L, f, make_index_tuple<sizeof...(A)>::type());
+	return invoke_aux(L, f, typename make_index_tuple<sizeof...(A)>::type());
 }
 
 template<class F>

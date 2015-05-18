@@ -22,21 +22,12 @@
 
 #define LUA_LIB
 
-extern "C" {
-#include "lua.h"
-#include "lauxlib.h"
-#include "slua.h"
-#include "ctype.h"
-}
-
 #include "slua.hpp"
 #include <limits>
 #include <strstream>
 
 #include "vector3.hpp"
 #include "matrix3x3.hpp"
-
-using namespace std;
 
 const Vector3	Vector3::zero = Vector3(0, 0, 0);
 const Vector3	Vector3::one = Vector3(1.0f, 1.0f, 1.0f);
@@ -66,7 +57,8 @@ Vector3 Vector3::Lerp(const Vector3& from, const Vector3& to, float t)
 {
 	t = SMath::Clamp(t);
 	return Vector3(from.x + ((to.x - from.x) * t), from.y + ((to.y - from.y) * t), from.z + ((to.z - from.z) * t));
-}
+}
+
 Vector3 Vector3::normalized() const
 {
 	Vector3 v(*this);
@@ -103,7 +95,7 @@ Vector3 OrthoNormalVectorFast(const Vector3& n)
 	if (std::abs(n.z) > kEpsilon)
 	{
 		float a = n.y*n.y + n.z*n.z;
-		float k = 1.0f / std::sqrtf(a);
+		float k = 1.0f / std::sqrt(a);
 		res.x = 0;
 		res.y = -n.z*k;
 		res.z = n.y*k;
@@ -111,7 +103,7 @@ Vector3 OrthoNormalVectorFast(const Vector3& n)
 	else
 	{
 		float a = n.x*n.x + n.y*n.y;
-		float k = 1.0f / std::sqrtf(a);
+		float k = 1.0f / std::sqrt(a);
 		res.x = -n.y*k;
 		res.y = n.x*k;
 		res.z = 0;
@@ -197,9 +189,9 @@ static inline float ClampedMove(float lhs, float rhs, float clampedDelta)
 {
 	float delta = rhs - lhs;
 	if (delta > 0.0F)
-		return lhs + min(delta, clampedDelta);
+		return lhs + std::min(delta, clampedDelta);
 	else
-		return lhs - min(-delta, clampedDelta);
+		return lhs - std::min(-delta, clampedDelta);
 }
 
 Vector3 Vector3::RotateTowards(const Vector3& lhs, const Vector3& rhs, float angleMove, float magnitudeMove)
@@ -231,7 +223,7 @@ Vector3 Vector3::RotateTowards(const Vector3& lhs, const Vector3& rhs, float ang
 			float angle = std::acos(dot);
 			Vector3 axis = Vector3::Cross(lhsNorm, rhsNorm).normalized();
 			Matrix3x3 m;
-			m.SetAxisAngle(axis, min(angleMove, angle));
+			m.SetAxisAngle(axis, std::min(angleMove, angle));
 			Vector3 rotated = m.Multiply(lhsNorm);
 			rotated *= ClampedMove(lhsMag, rhsMag, magnitudeMove);
 			return rotated;

@@ -28,20 +28,11 @@
 #define MT_COLOR	5
 
 #define LUA_LIB
+
 extern "C" {
-#include "lua.h"
-#include "lauxlib.h"
 #include <stdio.h>
 #include <string.h>
-#include "slua.h"
 }
-
-#ifdef _WINDOWS
-#include <float.h>
-#define isnan _isnan
-#else
-#include <math.h>
-#endif
 
 #include "slua.hpp"
 
@@ -151,7 +142,6 @@ extern "C" {
 	static void getmetatable(lua_State *L, const char* key) {
 		char ns[256];
 		snprintf(ns, 256, "UnityEngine.%s.Instance", key);
-
 		lua_getfield(L, LUA_REGISTRYINDEX, ns);
 	}
 
@@ -353,7 +343,7 @@ extern "C" {
 
 
 	static void setelement(lua_State* L, int p, float v, const char* key) {
-		if (!isnan(v)) {
+		if (!std::isnan(v)) {
 			lua_pushstring(L, key);
 			lua_pushnumber(L, v);
 			lua_settable(L, p);

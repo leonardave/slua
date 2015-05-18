@@ -34,4 +34,8 @@ int value_type_newindex(lua_State *L);
 #define snprintf _snprintf
 #endif
 
+#ifdef _WIN32
+#define snprintf _snprintf
+#endif
+
 #endif
