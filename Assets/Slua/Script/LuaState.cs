@@ -484,6 +484,14 @@ namespace SLua
 
 			refQueue = new Queue<UnrefPair>();
 
+			int err=LuaObject.pushTry(L);
+			LuaDLL.lua_pushcfunction(L, init);
+			LuaDLL.pcall(L, 0, 0, err);
+		}
+
+		[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+		static int init(IntPtr L)
+		{
 			LuaDLL.luaL_openlibs(L);
 
 			ObjectCache.make(L);
@@ -509,7 +517,7 @@ coroutine.resume=function(co,...)
 end
 ";
 			// overload resume function for report error
-			if(LuaDLL.lua_dostring(L, resumefunc)!=0)
+			if (LuaDLL.lua_dostring(L, resumefunc) != 0)
 				LuaObject.throwLuaError(L);
 
 			LuaDLL.lua_pushcfunction(L, dofile);
@@ -538,6 +546,7 @@ end
 			LuaDLL.lua_pushvalue(L, loaderFunc);
 			LuaDLL.lua_rawseti(L, loaderTable, 1);
 			LuaDLL.lua_settop(L, 0);
+			return 0;
 		}
 
 		public void Close()
@@ -737,6 +746,7 @@ end
 				if (LuaDLL.lua_pcall(L, 0, LuaDLL.LUA_MULTRET, -2) != 0)
 				{
 					LuaDLL.lua_pop(L, 1);
+					LuaDLL.lua_remove(L, errfunc); // pop error function
 					return false;
 				}
 				LuaDLL.lua_remove(L, errfunc); // pop error function

@@ -643,5 +643,12 @@ namespace LuaInterface
 
 		[DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
 		public static extern int luaS_subclassof(IntPtr l, int index, string t);
+
+		public static void pcall(IntPtr l, int nargs, int nrets, int err)
+		{
+			if(LuaDLL.lua_pcall(l, nargs, nrets, err)!=0)
+				LuaDLL.lua_pop(l, 1);
+			LuaDLL.lua_remove(l, err);
+		}
 	}
 }

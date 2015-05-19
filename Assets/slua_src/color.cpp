@@ -80,6 +80,19 @@ std::string Color::ToString()
 	return buf;
 }
 
+static int __mul(lua_State *L) {
+	if (lua_isnumber(L, 2)) {
+		Color c = check_type<Color>(L, 1);
+		float q = check_type<float>(L, 2);
+		return push_value(L, c*q);
+	}
+	else {
+		Color c1 = check_type<Color>(L, 1);
+		Color c2 = check_type<Color>(L, 2);
+		return push_value(L, c1*c2);
+	}
+}
+
 
 
 extern "C" void luaopen_color(lua_State *L) {
@@ -87,7 +100,7 @@ extern "C" void luaopen_color(lua_State *L) {
 		.method("__index", value_type_index)
 		.method("__add", &__add<Color>)
 		.method("__sub", &__sub<Color>)
-		.method("__mul", &__mul<Color>)
+		.method("__mul", &__mul)
 		.method("__div", &__div<Color>)
 		.method("__eq", &__eq<Color>)
 		.method("__unm", &__unm<Color>)

@@ -334,9 +334,7 @@ return index
 
 			LuaDLL.lua_pushvalue(l, 1);
 			LuaDLL.lua_pushvalue(l, 2);
-			if (LuaDLL.lua_pcall(l, 2, 1, err) != 0)
-				LuaDLL.lua_pop(l, 1);
-			LuaDLL.lua_remove(l, err);
+			LuaDLL.pcall(l, 2, 1, err);
 			return 1;
 		}
 
@@ -348,9 +346,7 @@ return index
 				return 0;
 
 			LuaDLL.lua_pushvalue(l, 1);
-			if (LuaDLL.lua_pcall(l, 1, 1, err) != 0)
-				LuaDLL.lua_pop(l, 1);
-			LuaDLL.lua_remove(l, err);
+			LuaDLL.pcall(l, 1, 1, err);
 			return 1;
 		}
 

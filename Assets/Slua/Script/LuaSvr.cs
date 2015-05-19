@@ -50,37 +50,36 @@ namespace SLua
 		{
 			luaState = new LuaState();
 
-			LuaObject.init(luaState.L);
-			bindAll(luaState.L);
-
 			GameObject go = new GameObject("LuaSvrProxy");
 			lgo = go.AddComponent<LuaSvrGameObject>();
 			GameObject.DontDestroyOnLoad(go);
 			lgo.state = luaState;
 			lgo.onUpdate = this.tick;
 
-			LuaTimer.reg(luaState.L);
-			LuaCoroutine.reg(luaState.L, lgo);
-			Helper.reg(luaState.L);
+			int err = LuaObject.pushTry(luaState.L);
+			LuaDLL.lua_pushcfunction(luaState.L, init);
+			LuaDLL.pcall(luaState.L, 0, 0, err);
 
-            try
-            {
-                LuaDLL.luaS_openextlibs(luaState.L);
-            }
-            catch (Exception)
-            {
-                // do nothing
-            }
-
-            LuaValueType.init(luaState.L);
-
-            start(main);
+			start(main);
 
 			if (LuaDLL.lua_gettop(luaState.L) != errorReported)
 			{
                 errorReported = LuaDLL.lua_gettop(luaState.L);
                 Debug.LogError(string.Format("Some function not remove temp value({0}) from lua stack. You should fix it.", LuaDLL.luaL_typename(luaState.L, errorReported)));
             }
+		}
+
+		[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+		static int init(IntPtr L)
+		{
+			LuaObject.init(L);
+			BindAll(L);
+			LuaTimer.reg(L);
+			LuaCoroutine.reg(L, lgo);
+			Helper.reg(L);
+			LuaDLL.luaS_openextlibs(L);
+			LuaValueType.init(L);
+			return 0;
 		}
 
 		public object start(string main)
@@ -108,7 +107,7 @@ namespace SLua
 		}
 
 
-		void bindAll(IntPtr l)
+		static void BindAll(IntPtr l)
 		{
 #if !RELEASE_MARCO // some RELEASE_MARCO used for release version 
 			Assembly[] ams = AppDomain.CurrentDomain.GetAssemblies();

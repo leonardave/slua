@@ -195,12 +195,10 @@ namespace SLua
 		{
 			int err = LuaObject.pushTry(l);
 
-			
-
 			if (LuaDLL.luaL_loadstring(l,code) != 0)
 			{
 				string errstr = LuaDLL.lua_tostring(l, -1);
-				throw new Exception(errstr);			
+				LuaDLL.luaL_error(l, errstr);		
 			}
 
 			LuaDLL.luaL_getmetatable(l, "Slua_Vector2_Meta");
@@ -209,8 +207,7 @@ namespace SLua
 			LuaDLL.luaL_getmetatable(l, "Slua_Quaternion_Meta");
 			LuaDLL.luaL_getmetatable(l, "Slua_Color_Meta");
 			
-			LuaDLL.lua_pcall(l, 5, 0, err);
-			LuaDLL.lua_settop(l, 0);
+			LuaDLL.pcall(l, 5, 0, err);
 		}
 	}
 }
