@@ -40,6 +40,7 @@ extern "C" {
 #include "math.hpp"
 #include "vector3.hpp"
 #include "quaternion.hpp"
+#include "color.hpp"
 
 template<class R>
 inline R check_type(lua_State *L, int p);
@@ -77,6 +78,23 @@ inline Quaternion check_type(lua_State *L, int p)
 	v.z = (float)lua_tonumber(L, -1);
 	lua_rawgeti(L, p, 4);
 	v.w = (float)lua_tonumber(L, -1);
+	lua_pop(L, 4);
+	return v;
+}
+
+template<>
+inline Color check_type(lua_State *L, int p)
+{
+	luaL_checktype(L, p, LUA_TTABLE);
+	lua_rawgeti(L, p, 1);
+	Color v;
+	v.r = (float)lua_tonumber(L, -1);
+	lua_rawgeti(L, p, 2);
+	v.g = (float)lua_tonumber(L, -1);
+	lua_rawgeti(L, p, 3);
+	v.b = (float)lua_tonumber(L, -1);
+	lua_rawgeti(L, p, 4);
+	v.a = (float)lua_tonumber(L, -1);
 	lua_pop(L, 4);
 	return v;
 }

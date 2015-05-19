@@ -34,6 +34,7 @@ namespace SLua
 	local Vector3 = UnityEngine.Vector3
 	local Quaternion = UnityEngine.Quaternion
 	local Time = UnityEngine.Time
+	local Color = UnityEngine.Color
 
 	local function Class(cls,base,ctor,static,instance)
 		local rawget=rawget
@@ -151,6 +152,41 @@ namespace SLua
 			set_y=function(self,v) self[2]=v end;
 			set_z=function(self,v) self[3]=v end;
 			set_w=function(self,v) self[4]=v end;
+		}
+	)
+
+	Class( UnityEngine.Color, args[5],
+
+        function(r,g,b,a)
+			local r={r,g,b,a}
+			return r
+		end,
+
+		{
+			get_black=function() return Color(0,0,0,1)  end;
+			get_blue=function() return Color(0,0,1,1)  end;
+			get_clear=function() return Color(0,0,0,0)  end;
+			get_cyan=function() return Color(0,1,1,1)  end;
+			get_gray=function() return Color(0.5,0.5,0.5,1)  end;
+			get_grey=function() return Color(0.5,0.5,0.5,1)  end;
+			get_green=function() return Color(0,1,0,1)  end;
+			get_magenta=function() return Color(1,0,1,1)  end;
+			get_red=function() return Color(1,0,0,1)  end;
+			get_white=function() return Color(1,1,1,1)  end;
+			get_yellow=function() return Color(1,0.92,0.016,1)  end;
+		},
+
+		{
+			Set=function(self,r,g,b,a) self[1],self[2],self[3],self[4]=r,g,b,a end;
+			get_r=function(self) return self[1] end;
+			get_g=function(self) return self[2] end;
+			get_b=function(self) return self[3] end;
+			get_a=function(self) return self[4] end;
+			set_r=function(self,v) self[1]=v end;
+			set_g=function(self,v) self[2]=v end;
+			set_b=function(self,v) self[3]=v end;
+			set_a=function(self,v) self[4]=v end;
+			get_grayscale=function(self) return (((0.299 * self.r) + (0.587 * self.g)) + (0.114 * self.b)) end
 		}
 	)
 

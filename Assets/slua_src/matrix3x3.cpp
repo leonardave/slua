@@ -20,12 +20,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-extern "C" {
-#include "lua.h"
-#include "lauxlib.h"
-#include "slua.h"
-}
-
 #include "matrix3x3.hpp"
 
 

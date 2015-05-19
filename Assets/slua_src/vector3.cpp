@@ -23,9 +23,6 @@
 #define LUA_LIB
 
 #include "slua.hpp"
-#include <limits>
-#include <strstream>
-
 #include "vector3.hpp"
 #include "matrix3x3.hpp"
 
